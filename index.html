@@ -1,82 +1,571 @@
 
-<script>
-const q = document.getElementById('question');
-const m = document.getElementById('messages');
-const b = document.getElementById('send');
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#171717">
+  <title>Tafsirna — Menjelajahi Makna, Menelusuri Tafsir</title>
+  <meta name="description" content="Tafsirna, ruang digital untuk menjelajahi makna Al-Qur'an melalui khazanah Tafsir Kementerian Agama Republik Indonesia.">
 
-const API_URL =
-  'https://ftxtulwrrxodbifhzdpv.supabase.co/functions/v1/dynamic-responder';
+  <style>
+    :root {
+      --black: #171717;
+      --black-soft: #22211f;
+      --cream: #f2ebdd;
+      --cream-dark: #e7ddca;
+      --gold: #b49a6a;
+      --text: #29251f;
+      --muted: #777064;
+      --white: #fffdf8;
+    }
 
-const SUPABASE_KEY =
-  'sb_publishable_zT0GXc5WJh048qJkfEhAsg_ovOCjPSi';
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-function addMessage(text, type) {
-  const el = document.createElement('div');
-  el.className = 'msg ' + type;
-  el.textContent = text;
-  m.appendChild(el);
-  m.scrollTop = m.scrollHeight;
-  return el;
-}
+    html {
+      scroll-behavior: smooth;
+    }
 
-async function send() {
-  const question = q.value.trim();
-  if (!question || b.disabled) return;
+    body {
+      font-family: Georgia, "Times New Roman", serif;
+      background: var(--cream);
+      color: var(--text);
+      line-height: 1.6;
+    }
 
-  addMessage(question, 'user');
-  q.value = '';
+    button, textarea {
+      font: inherit;
+    }
 
-  const loading = addMessage(
-    'Tafsirna sedang memproses pertanyaanmu...',
-    'bot'
-  );
+    .navbar {
+      background: var(--black);
+      color: var(--cream);
+      padding: 20px 7%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #38342e;
+    }
 
-  b.disabled = true;
-  b.textContent = 'Memproses...';
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 25px;
+      letter-spacing: 1px;
+      font-weight: bold;
+    }
 
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_KEY,
-        'Authorization': 'Bearer ' + SUPABASE_KEY
-      },
-      body: JSON.stringify({ question })
-    });
+    .brand-icon {
+      color: var(--gold);
+      font-size: 28px;
+    }
 
-    const data = await response.json();
+    .nav-label {
+      color: #c9bdab;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+    }
 
-    if (!response.ok) {
-      throw new Error(
-        data.details || data.error || 'Permintaan gagal.'
+    .hero {
+      background: var(--black);
+      color: var(--cream);
+      padding: 90px 8% 100px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: "۞";
+      position: absolute;
+      font-size: 280px;
+      color: rgba(242,235,221,0.035);
+      top: -75px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      color: var(--gold);
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      font: 12px Arial, sans-serif;
+      margin-bottom: 22px;
+      position: relative;
+    }
+
+    .hero h1 {
+      font-size: clamp(36px, 6vw, 64px);
+      line-height: 1.15;
+      max-width: 850px;
+      margin: auto;
+      font-weight: normal;
+      position: relative;
+    }
+
+    .hero h1 span {
+      color: #c9b48e;
+      font-style: italic;
+    }
+
+    .hero-description {
+      max-width: 600px;
+      margin: 25px auto 0;
+      color: #c9c0b1;
+      font: 15px/1.9 Arial, sans-serif;
+    }
+
+    .hero-line {
+      width: 65px;
+      height: 2px;
+      background: var(--gold);
+      margin: 32px auto 0;
+    }
+
+    .main {
+      max-width: 900px;
+      margin: -35px auto 0;
+      padding: 0 22px 70px;
+      position: relative;
+    }
+
+    .chat-card {
+      background: var(--white);
+      border: 1px solid #ded5c5;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 15px 45px rgba(34,29,20,0.10);
+    }
+
+    .section-label {
+      color: var(--gold);
+      font: 11px Arial, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+
+    .chat-card h2 {
+      font-size: 27px;
+      font-weight: normal;
+      margin-bottom: 7px;
+    }
+
+    .chat-intro {
+      color: var(--muted);
+      font: 14px/1.7 Arial, sans-serif;
+      margin-bottom: 23px;
+    }
+
+    #messages {
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+      max-height: 480px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+      scroll-behavior: smooth;
+    }
+
+    .msg {
+      padding: 15px 18px;
+      border-radius: 12px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font: 14px/1.8 Arial, sans-serif;
+    }
+
+    .msg.user {
+      background: var(--black);
+      color: var(--cream);
+      align-self: flex-end;
+      max-width: 85%;
+      border-bottom-right-radius: 3px;
+    }
+
+    .msg.bot {
+      background: var(--cream);
+      color: var(--text);
+      align-self: stretch;
+      border-bottom-left-radius: 3px;
+    }
+
+    .input-area {
+      border: 1px solid #d8cebd;
+      border-radius: 12px;
+      background: #fff;
+      padding: 12px;
+    }
+
+    #question {
+      width: 100%;
+      border: none;
+      outline: none;
+      resize: vertical;
+      min-height: 75px;
+      background: transparent;
+      color: var(--text);
+      font: 14px/1.7 Arial, sans-serif;
+      padding: 7px;
+    }
+
+    #question::placeholder {
+      color: #999185;
+    }
+
+    .input-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding-top: 9px;
+      border-top: 1px solid #eee7dc;
+    }
+
+    .input-hint {
+      color: #92897d;
+      font: 11px Arial, sans-serif;
+    }
+
+    #send {
+      border: none;
+      border-radius: 8px;
+      padding: 12px 19px;
+      background: var(--black);
+      color: var(--cream);
+      cursor: pointer;
+      font: 13px Arial, sans-serif;
+      transition: .2s;
+    }
+
+    #send:hover {
+      background: #40382c;
+    }
+
+    #send:disabled {
+      opacity: .55;
+      cursor: wait;
+    }
+
+    .source-section {
+      padding: 65px 10px 15px;
+      text-align: center;
+    }
+
+    .source-section h2 {
+      font-size: 30px;
+      font-weight: normal;
+      margin-bottom: 12px;
+    }
+
+    .source-description {
+      max-width: 570px;
+      margin: 0 auto 25px;
+      color: var(--muted);
+      font: 14px/1.8 Arial, sans-serif;
+    }
+
+    .source-card {
+      background: var(--black);
+      color: var(--cream);
+      border-radius: 14px;
+      padding: 27px;
+      max-width: 600px;
+      margin: auto;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .source-icon {
+      width: 65px;
+      height: 75px;
+      border: 1px solid var(--gold);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--gold);
+      font-size: 32px;
+      flex-shrink: 0;
+    }
+
+    .source-card h3 {
+      font-size: 19px;
+      font-weight: normal;
+      margin-bottom: 5px;
+    }
+
+    .source-card p {
+      color: #c9c0b1;
+      font: 12px/1.7 Arial, sans-serif;
+    }
+
+    .source-tag {
+      display: inline-block;
+      margin-top: 9px;
+      color: #d4bd91;
+      font: 11px Arial, sans-serif;
+      letter-spacing: .5px;
+    }
+
+    .about {
+      padding: 60px 10px 20px;
+      text-align: center;
+    }
+
+    .about h2 {
+      font-size: 27px;
+      font-weight: normal;
+      margin-bottom: 12px;
+    }
+
+    .about p {
+      max-width: 630px;
+      margin: auto;
+      color: var(--muted);
+      font: 14px/1.9 Arial, sans-serif;
+    }
+
+    footer {
+      background: var(--black);
+      color: #bfb5a5;
+      text-align: center;
+      padding: 27px 15px;
+      font: 12px/1.8 Arial, sans-serif;
+    }
+
+    @media (max-width: 600px) {
+      .navbar {
+        padding: 17px 6%;
+      }
+
+      .brand {
+        font-size: 22px;
+      }
+
+      .hero {
+        padding: 70px 7% 80px;
+      }
+
+      .hero-description {
+        font-size: 13px;
+      }
+
+      .main {
+        padding: 0 14px 50px;
+      }
+
+      .chat-card {
+        padding: 21px 17px;
+      }
+
+      .chat-card h2 {
+        font-size: 23px;
+      }
+
+      .input-hint {
+        display: none;
+      }
+
+      #send {
+        padding: 12px 14px;
+      }
+
+      .source-card {
+        padding: 20px 16px;
+        gap: 14px;
+      }
+
+      .source-card h3 {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="navbar">
+    <div class="brand">
+      <span class="brand-icon">۞</span>
+      <span>Tafsirna</span>
+    </div>
+    <div class="nav-label">Ruang Tafsir Digital</div>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow">Al-Qur'an · Khazanah Tafsir</div>
+    <h1>Menjelajahi Makna,<br><span>Menelusuri Tafsir.</span></h1>
+    <p class="hero-description">
+      Ruang digital untuk memahami pesan Al-Qur'an
+      melalui khazanah tafsir Kementerian Agama Republik Indonesia.
+    </p>
+    <div class="hero-line"></div>
+  </section>
+
+  <main class="main">
+
+    <section class="chat-card">
+      <div class="section-label">Eksplorasi Al-Qur'an</div>
+      <h2>Mulai bertanya</h2>
+      <p class="chat-intro">
+        Ajukan pertanyaan, telusuri makna ayat, atau masukkan
+        referensi surah dan ayat yang ingin kamu pahami.
+      </p>
+
+      <div id="messages" aria-live="polite">
+        <div class="msg bot">
+          Assalamu'alaikum! Selamat datang di Tafsirna.
+
+          Silakan tanyakan sesuatu tentang Al-Qur'an.
+          Contoh: Jelaskan penafsiran QS. Al-Baqarah: 255
+          berdasarkan Tafsir Kemenag.
+        </div>
+      </div>
+
+      <div class="input-area">
+        <textarea
+          id="question"
+          placeholder="Tuliskan pertanyaan atau referensi ayat..."
+          aria-label="Pertanyaan tentang Al-Qur'an"
+        ></textarea>
+
+        <div class="input-footer">
+          <span class="input-hint">Tekan Enter untuk mengirim</span>
+          <button id="send" type="button">Kirim pertanyaan ↗</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="source-section">
+      <div class="section-label">Sumber Penafsiran</div>
+      <h2>Khazanah Tafsir Kemenag</h2>
+      <p class="source-description">
+        Tafsirna menggunakan sumber penafsiran dari
+        Al-Qur'an dan Tafsirnya, karya Kementerian Agama
+        Republik Indonesia.
+      </p>
+
+      <div class="source-card">
+        <div class="source-icon">۞</div>
+        <div>
+          <h3>Al-Qur'an dan Tafsirnya</h3>
+          <p>Kementerian Agama Republik Indonesia</p>
+          <p>Tafsir Tahlili · 10 Jilid</p>
+          <span class="source-tag">
+            Kemenag Edisi Penyempurnaan
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section class="about">
+      <div class="section-label">Tentang Tafsirna</div>
+      <h2>Menemukan Makna dalam Khazanah</h2>
+      <p>
+        Tafsirna merupakan ruang eksplorasi digital yang
+        menghubungkan pertanyaan pengguna dengan data ayat
+        Al-Qur'an dan khazanah penafsiran Kementerian Agama
+        Republik Indonesia. Dikembangkan untuk mendukung
+        akses dan pemahaman terhadap sumber-sumber tafsir.
+      </p>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>Tafsirna · Menjelajahi Makna, Menelusuri Tafsir.</p>
+    <p>Berbasis Al-Qur'an dan Tafsir Kementerian Agama RI.</p>
+  </footer>
+
+  <script>
+    const q = document.getElementById('question');
+    const m = document.getElementById('messages');
+    const b = document.getElementById('send');
+
+    const API_URL =
+      'https://ftxtulwrrxodbifhzdpv.supabase.co/functions/v1/dynamic-responder';
+
+    const SUPABASE_KEY =
+      'sb_publishable_zT0GXc5WJh048qJkfEhAsg_ovOCjPSi';
+
+    function addMessage(text, type) {
+      const el = document.createElement('div');
+      el.className = 'msg ' + type;
+      el.textContent = text;
+      m.appendChild(el);
+      m.scrollTop = m.scrollHeight;
+      return el;
+    }
+
+    async function send() {
+      const question = q.value.trim();
+      if (!question || b.disabled) return;
+
+      addMessage(question, 'user');
+      q.value = '';
+
+      const loading = addMessage(
+        'Tafsirna sedang memproses pertanyaanmu...',
+        'bot'
       );
+
+      b.disabled = true;
+      b.textContent = 'Memproses...';
+
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_KEY
+          },
+          body: JSON.stringify({ question })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.details || data.error || 'Permintaan gagal.'
+          );
+        }
+
+        if (!data.answer) {
+          throw new Error('Jawaban AI tidak ditemukan.');
+        }
+
+        loading.textContent = data.answer;
+
+      } catch (error) {
+        console.error('Tafsirna error:', error);
+        loading.textContent =
+          'Maaf, terjadi kendala saat memproses pertanyaan. ' +
+          error.message;
+      } finally {
+        b.disabled = false;
+        b.textContent = 'Kirim pertanyaan ↗';
+        m.scrollTop = m.scrollHeight;
+      }
     }
 
-    if (!data.answer) {
-      throw new Error('Jawaban AI tidak ditemukan.');
-    }
+    b.addEventListener('click', send);
 
-    loading.textContent = data.answer;
+    q.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        send();
+      }
+    });
+  </script>
 
-  } catch (error) {
-    console.error('Tafsirna error:', error);
-    loading.textContent =
-      'Maaf, terjadi kendala saat memproses pertanyaan. ' +
-      error.message;
-  } finally {
-    b.disabled = false;
-    b.textContent = 'Kirim pertanyaan ↗';
-    m.scrollTop = m.scrollHeight;
-  }
-}
-
-b.addEventListener('click', send);
-
-q.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    send();
-  }
-});
-</script>
+</body>
+</html>
